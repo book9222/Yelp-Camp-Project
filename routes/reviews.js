@@ -1,14 +1,14 @@
-const express = require('express')
+const express = require('express');
 const router = express.Router({ mergeParams: true });
 
 const Campground = require('../models/campground');
-const Review = require('../models/review')
+const Review = require('../models/review');
 
-const { reviewSchema } = require('../schemas.js')
+const { reviewSchema } = require('../schemas.js');
+
 
 const ExpressError = require('../utils/ExpressError');
 const catchAsync = require('../utils/catchAsync');
-
 
 const validateReview = (req, res, next) => {
     const { error } = reviewSchema.validate(req.body);
@@ -21,23 +21,25 @@ const validateReview = (req, res, next) => {
 }
 
 
-////////// Make Review ///////////
+///////////// Make Review /////////////
 router.post('/', validateReview, catchAsync(async (req, res) => {
     const campground = await Campground.findById(req.params.id);
     const review = new Review(req.body.review);
     campground.reviews.push(review);
     await review.save();
     await campground.save();
+    req.flash('success', "Create a new review")
     res.redirect(`/campgrounds/${campground._id}`)
 }))
 
-///////// Delete Review ///////////
+
+/////////// Delete Review /////////////
 router.delete('/:reviewId', catchAsync(async (req, res) => {
     const { id, reviewId } = req.params;
     await Campground.findByIdAndUpdate(id, { $pull: { reviews: reviewId } });
     await Review.findByIdAndDelete(reviewId);
-    //res.send('Delete me')
-    res.redirect(`/campgrounds/${id}`)
+    req.flash('success', 'Successfully deleted review')
+    res.redirect(`/campgrounds/${id}`);
 }))
 
 module.exports = router;
